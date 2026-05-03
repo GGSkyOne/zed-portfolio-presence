@@ -76,4 +76,4 @@ jobs:
         run: ${{ matrix.bootstrap }}
 
       - name: build binary
-        run: ${{ matrix.binary }} build -p discord-presence-lsp --verbose --locked --release --target ${{ matrix.target }}
+        run: ${{ matrix.binary }} build -p portfolio-presence-lsp --verbose --locked --release --target ${{ matrix.target }}

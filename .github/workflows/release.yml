@@ -79,7 +79,7 @@ jobs:
         run: ${{ matrix.bootstrap }}
 
       - name: build binary
-        run: ${{ matrix.binary }} build -p discord-presence-lsp --verbose --locked --release --target ${{ matrix.target }}
+        run: ${{ matrix.binary }} build -p portfolio-presence-lsp --verbose --locked --release --target ${{ matrix.target }}
 
       - name: prepare for upload
         shell: bash
@@ -90,8 +90,8 @@ jobs:
             BIN_SUFFIX=".exe"
           fi
 
-          BIN_OUTPUT="target/${{ matrix.target }}/release/discord-presence-lsp${BIN_SUFFIX}"
-          ARCHIVE_NAME="discord-presence-lsp-${{ matrix.target }}"
+          BIN_OUTPUT="target/${{ matrix.target }}/release/portfolio-presence-lsp${BIN_SUFFIX}"
+          ARCHIVE_NAME="portfolio-presence-lsp-${{ matrix.target }}"
 
           mkdir tmp/
           mkdir "tmp/${ARCHIVE_NAME}"
