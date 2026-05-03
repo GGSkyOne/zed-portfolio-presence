@@ -40,8 +40,8 @@ pub fn init_logger() {
         .add_directive(format!("discord_presence_lsp={level}").parse().unwrap())
         .add_directive(format!("tower_lsp={level}").parse().unwrap()); // Reduce tower-lsp noise
 
-    let log_to_file = env::var("DISCORD_PRESENCE_LOG_TO_FILE")
-        .is_ok_and(|v| v.to_lowercase() == "true");
+    let log_to_file =
+        env::var("DISCORD_PRESENCE_LOG_TO_FILE").is_ok_and(|v| v.to_lowercase() == "true");
 
     if log_to_file {
         let log_dir = env::var("DISCORD_PRESENCE_LOG_DIR").unwrap_or_else(|_| {
