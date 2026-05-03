@@ -20,20 +20,20 @@
 use std::fs;
 use zed_extension_api::{self as zed};
 
-struct DiscordPresenceExtension {
+struct PortfolioPresenceExtension {
     cached_binary_path: Option<String>,
 }
 
 fn symlink_name() -> &'static str {
     let (platform, _) = zed::current_platform();
     match platform {
-        zed::Os::Windows => "discord-presence-lsp.exe",
-        _ => "discord-presence-lsp",
+        zed::Os::Windows => "portfolio-presence-lsp.exe",
+        _ => "portfolio-presence-lsp",
     }
 }
 
 #[allow(clippy::match_wildcard_for_single_variants)]
-impl DiscordPresenceExtension {
+impl PortfolioPresenceExtension {
     fn fallback(&mut self) -> zed::Result<String> {
         if let Some(path) = &self.cached_binary_path {
             if fs::metadata(path).is_ok_and(|stat| stat.is_file()) {
@@ -56,7 +56,7 @@ impl DiscordPresenceExtension {
         language_server_id: &zed::LanguageServerId,
         worktree: &zed::Worktree,
     ) -> zed::Result<String> {
-        if let Some(path) = worktree.which("discord-presence-lsp") {
+        if let Some(path) = worktree.which("portfolio-presence-lsp") {
             return Ok(path);
         }
 
@@ -72,7 +72,7 @@ impl DiscordPresenceExtension {
         );
 
         let release = zed::latest_github_release(
-            "xhyrom/zed-discord-presence",
+            "GGSkyOne/zed-portfolio-presence",
             zed::GithubReleaseOptions {
                 require_assets: true,
                 pre_release: false,
@@ -81,7 +81,7 @@ impl DiscordPresenceExtension {
 
         let (platform, arch) = zed::current_platform();
         let asset_name = format!(
-            "discord-presence-lsp-{arch}-{os}.{extension}",
+            "portfolio-presence-lsp-{arch}-{os}.{extension}",
             arch = match arch {
                 zed::Architecture::Aarch64 => "aarch64",
                 zed::Architecture::X8664 => "x86_64",
@@ -104,15 +104,15 @@ impl DiscordPresenceExtension {
             .find(|asset| asset.name == asset_name)
             .ok_or_else(|| format!("no asset found matching {asset_name:?}"))?;
 
-        let version_dir = format!("discord-presence-lsp-{}", release.version);
+        let version_dir = format!("portfolio-presence-lsp-{}", release.version);
         let asset_name = asset_name
             .split('.')
             .next()
             .expect("failed to split asset name");
 
         let binary_path: String = match platform {
-            zed::Os::Windows => format!("{version_dir}/{asset_name}/discord-presence-lsp.exe"),
-            _ => format!("{version_dir}/{asset_name}/discord-presence-lsp"),
+            zed::Os::Windows => format!("{version_dir}/{asset_name}/portfolio-presence-lsp.exe"),
+            _ => format!("{version_dir}/{asset_name}/portfolio-presence-lsp"),
         };
 
         let symlink_name = symlink_name();
@@ -159,7 +159,7 @@ impl DiscordPresenceExtension {
     }
 }
 
-impl zed::Extension for DiscordPresenceExtension {
+impl zed::Extension for PortfolioPresenceExtension {
     fn new() -> Self {
         Self {
             cached_binary_path: None,
@@ -186,4 +186,4 @@ impl zed::Extension for DiscordPresenceExtension {
     }
 }
 
-zed::register_extension!(DiscordPresenceExtension);
+zed::register_extension!(PortfolioPresenceExtension);
