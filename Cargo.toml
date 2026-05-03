@@ -1,12 +1,12 @@
 [package]
-name = "zed-discord-presence"
+name = "zed-portfolio-presence"
 version = "0.2.4"
 edition = "2021"
 license-file = "LICENSE"
-repository = "https://github.com/xhyrom/zed-discord-presence"
+repository = "https://github.com/GGSkyOne/zed-portfolio-presence"
 
 [lib]
-path = "src/discord_presence.rs"
+path = "src/portfolio_presence.rs"
 crate-type = ["cdylib"]
 
 [dependencies]
