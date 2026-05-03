@@ -1,11 +1,13 @@
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use reqwest::Client;
 use tracing::{debug, info, warn};
 
 use crate::error::Result;
+
+const THROTTLE_DURATION: Duration = Duration::from_secs(5);
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PortfolioPayload {
@@ -24,6 +26,7 @@ pub struct Portfolio {
     http_secret: Option<String>,
     shutting_down: Arc<AtomicBool>,
     last_payload: Option<PortfolioPayload>,
+    last_sent_at: Option<Instant>,
 }
 
 impl Portfolio {
@@ -34,6 +37,7 @@ impl Portfolio {
             http_secret: None,
             shutting_down,
             last_payload: None,
+            last_sent_at: None,
         }
     }
 
@@ -69,6 +73,18 @@ impl Portfolio {
         if self.last_payload.as_ref() == Some(payload) {
             debug!("Payload unchanged, skipping portfolio request");
             return Ok(());
+        }
+
+        if let Some(last_sent) = self.last_sent_at {
+            let elapsed = last_sent.elapsed();
+
+            if elapsed < THROTTLE_DURATION {
+                debug!(
+                    "Throttling portfolio request ({}ms since last send)",
+                    elapsed.as_millis(),
+                );
+                return Ok(());
+            }
         }
 
         let timestamp_ms = SystemTime::now()
@@ -109,6 +125,7 @@ impl Portfolio {
         if status.is_success() {
             info!("Portfolio activity sent (HTTP {})", status);
             self.last_payload = Some(payload.clone());
+            self.last_sent_at = Some(Instant::now());
         } else {
             warn!("Portfolio API returned non-success status: {}", status);
         }
