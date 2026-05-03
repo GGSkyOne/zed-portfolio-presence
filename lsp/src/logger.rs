@@ -41,8 +41,7 @@ pub fn init_logger() {
         .add_directive(format!("tower_lsp={level}").parse().unwrap()); // Reduce tower-lsp noise
 
     let log_to_file = env::var("DISCORD_PRESENCE_LOG_TO_FILE")
-        .map(|v| v.to_lowercase() == "true")
-        .unwrap_or(false);
+        .is_ok_and(|v| v.to_lowercase() == "true");
 
     if log_to_file {
         let log_dir = env::var("DISCORD_PRESENCE_LOG_DIR").unwrap_or_else(|_| {

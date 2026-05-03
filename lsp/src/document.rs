@@ -25,7 +25,7 @@ use tower_lsp::lsp_types::Url;
 #[derive(Debug, Clone)]
 pub struct Document {
     path: PathBuf,
-    workspace_root: PathBuf,
+    _workspace_root: PathBuf,
     line_number: Option<u32>,
 }
 
@@ -35,7 +35,7 @@ impl Document {
             path: url
                 .to_file_path()
                 .unwrap_or_else(|()| PathBuf::from(url.path())),
-            workspace_root: workspace_root.to_owned(),
+            _workspace_root: workspace_root.to_owned(),
             line_number,
         }
     }

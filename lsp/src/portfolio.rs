@@ -62,12 +62,11 @@ impl Portfolio {
             return Ok(());
         }
 
-        let url = match &self.endpoint_url {
-            Some(u) => u.clone(),
-            None => {
-                debug!("No endpoint_url configured, skipping portfolio request");
-                return Ok(());
-            }
+        let url = if let Some(u) = &self.endpoint_url {
+            u.clone()
+        } else {
+            debug!("No endpoint_url configured, skipping portfolio request");
+            return Ok(());
         };
 
         if self.last_payload.as_ref() == Some(payload) {
@@ -89,8 +88,7 @@ impl Portfolio {
 
         let timestamp_ms = SystemTime::now()
             .duration_since(UNIX_EPOCH)
-            .map(|d| d.as_millis() as u64)
-            .unwrap_or(0);
+            .map_or(0, |d| u64::try_from(d.as_millis()).unwrap_or(u64::MAX));
 
         let body = serde_json::json!({
             "workspace": {

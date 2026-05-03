@@ -235,11 +235,8 @@ impl LanguageServer for Backend {
     async fn shutdown(&self) -> Result<()> {
         info!("Shutting down Portfolio Presence LSP");
 
-        if let Err(e) = self.presence_service.shutdown().await {
-            error!("Failed to shutdown presence service: {}", e);
-        } else {
-            info!("Presence service shutdown successfully");
-        }
+        self.presence_service.shutdown();
+        info!("Presence service shutdown successfully");
 
         Ok(())
     }

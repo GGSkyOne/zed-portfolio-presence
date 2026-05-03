@@ -36,13 +36,10 @@ impl PresenceService {
         Ok(())
     }
 
-    pub async fn shutdown(&self) -> Result<()> {
+    pub fn shutdown(&self) {
         if !self.state.mark_shutting_down() {
             debug!("Presence service shutdown already in progress");
-            return Ok(());
         }
-
-        Ok(())
     }
 
     async fn send_portfolio_activity(&self, doc: Option<&Document>) -> Result<()> {
@@ -51,12 +48,9 @@ impl PresenceService {
             return Ok(());
         }
 
-        let doc = match doc {
-            Some(d) => d,
-            None => {
-                debug!("No document available, skipping portfolio request");
-                return Ok(());
-            }
+        let Some(doc) = doc else {
+            debug!("No document available, skipping portfolio request");
+            return Ok(());
         };
 
         let (workspace_name, git_enabled) = {
@@ -95,8 +89,8 @@ mod tests {
         let state = Arc::new(AppState::new());
         let service = PresenceService::new(state);
 
-        assert!(service.shutdown().await.is_ok());
-        assert!(service.shutdown().await.is_ok());
+        service.shutdown();
+        service.shutdown();
     }
 
     #[tokio::test]
