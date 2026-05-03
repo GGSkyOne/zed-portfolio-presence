@@ -33,19 +33,16 @@ use tower_lsp::lsp_types::{
     TextDocumentSyncSaveOptions, WorkspaceServerCapabilities,
 };
 use tower_lsp::{Client, LanguageServer, LspService, Server};
-use tracing::{debug, error, info, instrument, warn};
+use tracing::{debug, error, info, instrument};
 
-mod activity;
 mod config;
-mod discord;
 mod document;
 mod error;
 mod git;
-mod idle;
 mod languages;
 mod logger;
+mod portfolio;
 mod service;
-mod util;
 
 #[derive(Debug)]
 struct Backend {
@@ -111,7 +108,7 @@ impl Backend {
 #[tower_lsp::async_trait]
 impl LanguageServer for Backend {
     async fn initialize(&self, params: InitializeParams) -> Result<InitializeResult> {
-        info!("Initializing Discord Presence LSP");
+        info!("Initializing Portfolio Presence LSP");
 
         // Set workspace
         let workspace_path = Self::resolve_workspace_path(&params);
@@ -135,8 +132,8 @@ impl LanguageServer for Backend {
             }
 
             debug!(
-                "Configuration updated: application_id={}, git_integration={}",
-                config.application_id, config.git_integration
+                "Configuration updated: git_integration={}",
+                config.git_integration
             );
 
             // Check if workspace is suitable
@@ -185,26 +182,16 @@ impl LanguageServer for Backend {
             }
         }
 
-        // Initialize Discord
-        // non-blocking, will retry on first activity update
+        // Configure portfolio client with endpoint settings
         {
             let config = self.app_state.config.lock().await;
-            match self
-                .presence_service
-                .initialize_discord(&config.application_id)
-                .await
-            {
-                Ok(()) => {
-                    info!("Discord client initialized and connected");
-                }
-                Err(e) => {
-                    // Don't fail initialization - connection will be retried on activity update
-                    warn!(
-                        "Discord connection failed during init, will retry on activity: {}",
-                        e
-                    );
-                }
-            }
+            let mut portfolio = self.app_state.portfolio.lock().await;
+            portfolio.configure(config.endpoint_url.clone(), config.http_secret.clone());
+
+            info!(
+                "Portfolio client configured (endpoint: {:?})",
+                config.endpoint_url
+            );
         }
 
         Ok(InitializeResult {
@@ -234,19 +221,19 @@ impl LanguageServer for Backend {
     }
 
     async fn initialized(&self, _: InitializedParams) {
-        info!("Discord Presence LSP server fully initialized and ready");
+        info!("Portfolio Presence LSP server fully initialized and ready");
 
         self.client
             .log_message(
                 MessageType::INFO,
-                "Discord Presence LSP server initialized!",
+                "Portfolio Presence LSP server initialized!",
             )
             .await;
     }
 
     #[instrument(skip(self))]
     async fn shutdown(&self) -> Result<()> {
-        info!("Shutting down Discord Presence LSP");
+        info!("Shutting down Portfolio Presence LSP");
 
         if let Err(e) = self.presence_service.shutdown().await {
             error!("Failed to shutdown presence service: {}", e);
@@ -304,7 +291,7 @@ async fn main() {
     logger::init_logger();
 
     info!(
-        "Starting Discord Presence LSP server v{}",
+        "Starting Portfolio Presence LSP server v{}",
         env!("CARGO_PKG_VERSION")
     );
 
@@ -316,5 +303,5 @@ async fn main() {
     info!("LSP service created, starting server");
     Server::new(stdin, stdout, socket).serve(service).await;
 
-    info!("Discord Presence LSP server stopped");
+    info!("Portfolio Presence LSP server stopped");
 }

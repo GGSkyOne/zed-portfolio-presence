@@ -62,75 +62,6 @@ impl Document {
             .to_str()
             .unwrap_or("")
     }
-
-    pub fn get_relative_file_path(&self) -> Result<String> {
-        let relative_path = self.path.strip_prefix(&self.workspace_root).map_err(|_| {
-            PresenceError::Config("File is not within the workspace root".to_string())
-        })?;
-
-        Ok(normalize_path(relative_path))
-    }
-
-    pub fn get_full_directory_name(&self) -> Result<String> {
-        let parent_dir = self.path.parent().ok_or_else(|| {
-            PresenceError::Config("Could not determine parent directory".to_string())
-        })?;
-
-        Ok(normalize_path(parent_dir))
-    }
-
-    pub fn get_directory_name(&self) -> Result<String> {
-        let parent_dir = self.path.parent().ok_or_else(|| {
-            PresenceError::Config("Could not determine parent directory".to_string())
-        })?;
-
-        let dir_name = parent_dir.file_name().ok_or_else(|| {
-            PresenceError::Config("Could not determine directory name".to_string())
-        })?;
-
-        Ok(dir_name.to_str().unwrap_or("").to_string())
-    }
-
-    pub fn get_folder_and_file(&self) -> Result<String> {
-        let parent = self.get_directory_name()?;
-        let file = self.get_filename()?;
-
-        Ok(format!("{parent}/{file}"))
-    }
-
-    /// Gets the file size in bytes.
-    pub fn get_file_size(&self) -> Result<u64> {
-        std::fs::metadata(&self.path)
-            .map(|m| m.len())
-            .map_err(|e| PresenceError::Config(format!("Failed to get file size: {e}")))
-    }
-
-    /// Gets the file size in a human-readable format (e.g., "1.2 KB").
-    pub fn get_formatted_file_size(&self) -> String {
-        match self.get_file_size() {
-            Ok(size) => format_file_size(size),
-            Err(_) => "unknown".to_string(),
-        }
-    }
-}
-
-fn normalize_path(path: &Path) -> String {
-    path.to_string_lossy().replace('\\', "/")
-}
-
-/// Formats a file size in bytes to a human-readable string.
-#[allow(clippy::cast_precision_loss)]
-fn format_file_size(bytes: u64) -> String {
-    const KB: u64 = 1024;
-    const MB: u64 = KB * 1024;
-
-    if bytes >= MB {
-        format!("{:.1} MB", bytes as f64 / MB as f64)
-    } else if bytes >= KB {
-        format!("{:.1} KB", bytes as f64 / KB as f64)
-    } else {
-        format!("{} byte{}", bytes, if bytes == 1 { "" } else { "s" })
-    }
 }
 
 #[cfg(test)]
@@ -157,13 +88,6 @@ mod tests {
 
         assert_eq!(doc.get_filename().unwrap(), "test.rs");
         assert_eq!(doc.get_extension(), "rs");
-        assert_eq!(doc.get_relative_file_path().unwrap(), "src/test.rs");
-        assert_eq!(
-            doc.get_full_directory_name().unwrap(),
-            super::normalize_path(&workspace_root.join("src"))
-        );
-        assert_eq!(doc.get_directory_name().unwrap(), "src");
-        assert_eq!(doc.get_folder_and_file().unwrap(), "src/test.rs");
     }
 
     #[test]
@@ -174,28 +98,5 @@ mod tests {
         let doc = Document::new(&url, &workspace_root, None);
 
         assert_eq!(doc.get_filename().unwrap(), "test file.rs");
-    }
-
-    #[test]
-    fn test_format_file_size_bytes() {
-        assert_eq!(format_file_size(0), "0 bytes");
-        assert_eq!(format_file_size(1), "1 byte");
-        assert_eq!(format_file_size(512), "512 bytes");
-        assert_eq!(format_file_size(1023), "1023 bytes");
-    }
-
-    #[test]
-    fn test_format_file_size_kilobytes() {
-        assert_eq!(format_file_size(1024), "1.0 KB");
-        assert_eq!(format_file_size(1536), "1.5 KB");
-        assert_eq!(format_file_size(10240), "10.0 KB");
-        assert_eq!(format_file_size(1048575), "1024.0 KB"); // Just under 1 MB
-    }
-
-    #[test]
-    fn test_format_file_size_megabytes() {
-        assert_eq!(format_file_size(1048576), "1.0 MB"); // Exactly 1 MB
-        assert_eq!(format_file_size(1572864), "1.5 MB");
-        assert_eq!(format_file_size(10485760), "10.0 MB");
     }
 }

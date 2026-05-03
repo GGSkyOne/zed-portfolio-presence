@@ -38,8 +38,7 @@ pub fn init_logger() {
 
     let filter = EnvFilter::from_default_env()
         .add_directive(format!("discord_presence_lsp={level}").parse().unwrap())
-        .add_directive(format!("tower_lsp={level}").parse().unwrap()) // Reduce tower-lsp noise
-        .add_directive(format!("discord_rich_presence={level}").parse().unwrap()); // Reduce discord lib noise
+        .add_directive(format!("tower_lsp={level}").parse().unwrap()); // Reduce tower-lsp noise
 
     let log_to_file = env::var("DISCORD_PRESENCE_LOG_TO_FILE")
         .map(|v| v.to_lowercase() == "true")
