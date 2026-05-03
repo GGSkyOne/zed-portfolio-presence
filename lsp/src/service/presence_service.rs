@@ -1,6 +1,6 @@
 use crate::{
-    document::Document, error::Result, idle::IdleManager, languages::get_language,
-    portfolio::PortfolioPayload, service::AppState,
+    document::Document, error::Result, languages::get_language, portfolio::PortfolioPayload,
+    service::AppState,
 };
 use std::sync::Arc;
 use tracing::debug;
@@ -8,17 +8,11 @@ use tracing::debug;
 #[derive(Debug)]
 pub struct PresenceService {
     state: Arc<AppState>,
-    idle_manager: IdleManager,
 }
 
 impl PresenceService {
     pub fn new(state: Arc<AppState>) -> Self {
-        let idle_manager = IdleManager::new(Arc::clone(&state.shutting_down));
-
-        Self {
-            state,
-            idle_manager,
-        }
+        Self { state }
     }
 
     pub async fn update_presence(&self, doc: Option<Document>) -> Result<()> {
@@ -30,10 +24,6 @@ impl PresenceService {
         {
             let mut last_doc = self.state.last_document.lock().await;
             (*last_doc).clone_from(&doc);
-        }
-
-        if doc.is_some() {
-            self.reset_idle_timeout().await?;
         }
 
         if self.state.is_shutting_down() {
@@ -49,11 +39,8 @@ impl PresenceService {
     pub async fn shutdown(&self) -> Result<()> {
         if !self.state.mark_shutting_down() {
             debug!("Presence service shutdown already in progress");
-            self.idle_manager.cancel_timeout().await;
             return Ok(());
         }
-
-        self.idle_manager.cancel_timeout().await;
 
         Ok(())
     }
@@ -97,47 +84,11 @@ impl PresenceService {
         let mut portfolio = self.state.portfolio.lock().await;
         portfolio.send_activity(&payload).await
     }
-
-    async fn reset_idle_timeout(&self) -> Result<()> {
-        if self.state.is_shutting_down() {
-            debug!("Skipping idle timeout reset because shutdown is in progress");
-            return Ok(());
-        }
-
-        let workspace_name = {
-            let workspace = self.state.workspace.lock().await;
-            workspace.name().to_string()
-        };
-
-        self.idle_manager
-            .reset_timeout(
-                Arc::clone(&self.state.portfolio),
-                Arc::clone(&self.state.config),
-                workspace_name,
-            )
-            .await;
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[tokio::test]
-    async fn test_shutdown_cancels_idle_timeout_and_marks_state() {
-        let state = Arc::new(AppState::new());
-        let service = PresenceService::new(Arc::clone(&state));
-
-        service.reset_idle_timeout().await.unwrap();
-        assert!(service.idle_manager.has_timeout().await);
-
-        service.shutdown().await.unwrap();
-
-        assert!(state.is_shutting_down());
-        assert!(!service.idle_manager.has_timeout().await);
-    }
 
     #[tokio::test]
     async fn test_shutdown_is_idempotent() {
